@@ -1,0 +1,1656 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>即時會議翻譯轉錄 | Real-time Meeting Translator</title>
+    <style>
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5a67d8;
+            --secondary: #764ba2;
+            --danger: #f56565;
+            --danger-dark: #e53e3e;
+            --success: #48bb78;
+            --bg: #f7fafc;
+            --card: #ffffff;
+            --text: #2d3748;
+            --text-secondary: #718096;
+            --border: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans TC', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            min-height: 100dvh;
+            padding: 12px;
+            color: var(--text);
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* Card 樣式 */
+        .card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        /* Header */
+        .app-header {
+            text-align: center;
+            color: white;
+            padding: 8px 0;
+        }
+
+        .app-header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .app-header p {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-top: 4px;
+        }
+
+        /* API Key 區域 */
+        .api-key-card {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .api-key-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text);
+            white-space: nowrap;
+        }
+
+        .api-key-wrapper {
+            flex: 1;
+            min-width: 200px;
+            position: relative;
+        }
+
+        .api-key-wrapper input {
+            width: 100%;
+            padding: 10px 40px 10px 14px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s;
+            background: var(--bg);
+        }
+
+        .api-key-wrapper input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: white;
+        }
+
+        .toggle-vis {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 4px;
+            opacity: 0.6;
+            transition: opacity 0.3s;
+        }
+
+        .toggle-vis:hover {
+            opacity: 1;
+        }
+
+        .apply-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .apply-link:hover {
+            text-decoration: underline;
+        }
+
+        /* 語言設定 */
+        .lang-card {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .lang-title {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .lang-row {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 12px;
+            align-items: end;
+        }
+
+        .lang-group label {
+            display: block;
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        .lang-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 14px;
+            background: var(--bg);
+            cursor: pointer;
+            transition: all 0.3s;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23718096' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 32px;
+        }
+
+        .lang-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .swap-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            background: var(--bg);
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            align-self: end;
+            margin-bottom: 2px;
+        }
+
+        .swap-btn:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            transform: rotate(180deg);
+        }
+
+        /* 錄音控制區 */
+        .recording-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            padding: 24px 20px;
+        }
+
+        .record-btn-wrapper {
+            position: relative;
+        }
+
+        .record-btn {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            font-size: 40px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .record-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .record-btn:active {
+            transform: scale(0.98);
+        }
+
+        .record-btn.recording {
+            background: linear-gradient(135deg, var(--danger) 0%, var(--danger-dark) 100%);
+            box-shadow: 0 4px 15px rgba(245, 101, 101, 0.4);
+        }
+
+        .record-btn.recording .btn-ring {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 3px solid var(--danger);
+            animation: ring-pulse 1.5s infinite;
+        }
+
+        @keyframes ring-pulse {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+
+        .record-status {
+            text-align: center;
+        }
+
+        .record-status .status-text {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .record-status .status-sub {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .recording-indicator {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .recording-indicator.active {
+            display: flex;
+        }
+
+        .rec-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--danger);
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .rec-label {
+            font-size: 12px;
+            color: var(--danger);
+            font-weight: 500;
+        }
+
+        /* 處理狀態 */
+        .processing-bar {
+            width: 100%;
+            max-width: 300px;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .processing-bar.active {
+            display: block;
+        }
+
+        .processing-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            border-radius: 2px;
+            animation: loading-bar 1.5s ease-in-out infinite;
+            width: 30%;
+        }
+
+        @keyframes loading-bar {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(400%); }
+        }
+
+        /* 操作按鈕 */
+        .action-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .action-btn {
+            padding: 10px 20px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            background: white;
+            color: var(--text);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .action-btn:hover:not(:disabled) {
+            background: var(--bg);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .action-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .action-btn.danger:hover:not(:disabled) {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        /* 統計 */
+        .stats-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .stat-chip {
+            padding: 6px 14px;
+            background: var(--bg);
+            border-radius: 20px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .stat-chip strong {
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        /* 延遲指示器 */
+        .latency-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .latency-badge.good {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .latency-badge.warn {
+            background: #fefcbf;
+            color: #744210;
+        }
+
+        .latency-badge.bad {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+
+        /* 結果區域 */
+        .results-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .result-panel {
+            background: var(--card);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            min-height: 250px;
+        }
+
+        .panel-header {
+            padding: 14px 16px;
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .panel-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .lang-badge {
+            padding: 3px 8px;
+            background: var(--primary);
+            color: white;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .copy-btn {
+            padding: 6px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: white;
+            color: var(--text-secondary);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .copy-btn:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .panel-content {
+            padding: 16px;
+            font-size: 14px;
+            line-height: 1.7;
+            flex: 1;
+            overflow-y: auto;
+            min-height: 200px;
+            max-height: 400px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .panel-content.has-content {
+            color: var(--text);
+        }
+
+        .segment-item {
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed var(--border);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .segment-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .segment-time {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .segment-text {
+            font-size: 14px;
+        }
+
+        .current-segment {
+            background: #ebf8ff;
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin-top: 8px;
+            border-left: 3px solid var(--primary);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .current-segment-label {
+            font-size: 11px;
+            color: var(--primary);
+            font-weight: 600;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .current-segment-text {
+            font-size: 14px;
+            color: var(--primary-dark);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            min-height: 200px;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        .placeholder-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            opacity: 0.3;
+        }
+
+        .placeholder-text {
+            font-size: 13px;
+            line-height: 1.6;
+            opacity: 0.6;
+        }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .toast {
+            padding: 12px 20px;
+            background: var(--text);
+            color: white;
+            border-radius: 10px;
+            font-size: 14px;
+            box-shadow: var(--shadow-lg);
+            animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s;
+            max-width: 300px;
+        }
+
+        .toast.error {
+            background: var(--danger);
+        }
+
+        .toast.success {
+            background: var(--success);
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes fadeOut {
+            to { opacity: 0; transform: translateX(100%); }
+        }
+
+        /* 音量指示器 */
+        .volume-meter {
+            display: flex;
+            align-items: end;
+            gap: 2px;
+            height: 20px;
+            justify-content: center;
+            margin-top: 8px;
+        }
+
+        .volume-bar {
+            width: 4px;
+            background: var(--primary);
+            border-radius: 2px;
+            transition: height 0.1s;
+            min-height: 3px;
+        }
+
+        /* 響應式設計 */
+        @media (max-width: 768px) {
+            body {
+                padding: 8px;
+            }
+
+            .container {
+                gap: 8px;
+            }
+
+            .card {
+                padding: 16px;
+                border-radius: 12px;
+            }
+
+            .app-header h1 {
+                font-size: 20px;
+            }
+
+            .api-key-card {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
+            }
+
+            .api-key-wrapper {
+                min-width: unset;
+            }
+
+            .lang-row {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+
+            .swap-btn {
+                align-self: center;
+                transform: rotate(90deg);
+            }
+
+            .swap-btn:hover {
+                transform: rotate(270deg);
+            }
+
+            .record-btn {
+                width: 80px;
+                height: 80px;
+                font-size: 32px;
+            }
+
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .result-panel {
+                min-height: 180px;
+            }
+
+            .panel-content {
+                max-height: 250px;
+                min-height: 150px;
+            }
+
+            .action-btn {
+                padding: 10px 16px;
+                font-size: 13px;
+                flex: 1;
+                justify-content: center;
+                min-width: 0;
+            }
+
+            .action-row {
+                width: 100%;
+            }
+
+            .stats-row {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .toast-container {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+            }
+
+            .toast {
+                max-width: unset;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .record-btn {
+                width: 70px;
+                height: 70px;
+                font-size: 28px;
+            }
+
+            .stat-chip {
+                padding: 4px 10px;
+                font-size: 12px;
+            }
+        }
+
+        /* 滾動條美化 */
+        .panel-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .panel-content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .panel-content::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        .panel-content::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+
+        /* 模型選擇 */
+        .model-selector {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .model-selector label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .model-selector select {
+            padding: 8px 12px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 13px;
+            background: var(--bg);
+            cursor: pointer;
+        }
+
+        /* 連接狀態 */
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            background: var(--bg);
+        }
+
+        .connection-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #a0aec0;
+        }
+
+        .connection-dot.connected {
+            background: var(--success);
+        }
+
+        .connection-dot.error {
+            background: var(--danger);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="app-header">
+            <h1>🎤 即時會議翻譯轉錄</h1>
+            <p>Real-time Meeting Transcription & Translation</p>
+        </div>
+
+        <!-- API Key -->
+        <div class="card api-key-card">
+            <div class="api-key-label">🔑 API Key</div>
+            <div class="api-key-wrapper">
+                <input type="password" id="apiKey" placeholder="gsk_... (儲存在本機)" autocomplete="off">
+                <button class="toggle-vis" onclick="toggleApiKeyVisibility()">👁</button>
+            </div>
+            <a href="https://console.groq.com/keys" target="_blank" class="apply-link">免費申請 →</a>
+            <div class="connection-status" id="connectionStatus">
+                <div class="connection-dot" id="connectionDot"></div>
+                <span id="connectionText">未連接</span>
+            </div>
+        </div>
+
+        <!-- Language Settings -->
+        <div class="card lang-card">
+            <div class="lang-title">🌐 語言設定</div>
+            <div class="lang-row">
+                <div class="lang-group">
+                    <label>語音來源語言</label>
+                    <select id="sourceLang">
+                        <option value="en">English</option>
+                        <option value="zh">中文 (Chinese)</option>
+                        <option value="ja">日本語 (Japanese)</option>
+                        <option value="ko">한국어 (Korean)</option>
+                        <option value="es">Español (Spanish)</option>
+                        <option value="fr">Français (French)</option>
+                        <option value="de">Deutsch (German)</option>
+                        <option value="pt">Português (Portuguese)</option>
+                        <option value="ru">Русский (Russian)</option>
+                        <option value="ar">العربية (Arabic)</option>
+                    </select>
+                </div>
+                <button class="swap-btn" onclick="swapLanguages()" title="交換語言">⇄</button>
+                <div class="lang-group">
+                    <label>翻譯目標語言</label>
+                    <select id="targetLang">
+                        <option value="zh-TW">繁體中文</option>
+                        <option value="zh-CN">简体中文</option>
+                        <option value="en">English</option>
+                        <option value="ja">日本語</option>
+                        <option value="ko">한국어</option>
+                        <option value="es">Español</option>
+                        <option value="fr">Français</option>
+                        <option value="de">Deutsch</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recording Section -->
+        <div class="card recording-card">
+            <div class="record-btn-wrapper">
+                <button class="record-btn" id="recordBtn" onclick="toggleRecording()">
+                    <span class="btn-ring" style="display:none;"></span>
+                    <span id="recordIcon">🎤</span>
+                </button>
+            </div>
+            
+            <div class="record-status">
+                <div class="status-text" id="recordText">點擊開始錄音</div>
+                <div class="status-sub" id="recordSub">支援即時轉錄與翻譯</div>
+                <div class="recording-indicator" id="recIndicator">
+                    <div class="rec-dot"></div>
+                    <span class="rec-label">REC</span>
+                </div>
+            </div>
+
+            <div class="volume-meter" id="volumeMeter">
+                <div class="volume-bar" style="height:3px;"></div>
+                <div class="volume-bar" style="height:3px;"></div>
+                <div class="volume-bar" style="height:3px;"></div>
+                <div class="volume-bar" style="height:3px;"></div>
+                <div class="volume-bar" style="height:3px;"></div>
+                <div class="volume-bar" style="height:3px;"></div>
+                <div class="volume-bar" style="height:3px;"></div>
+                <div class="volume-bar" style="height:3px;"></div>
+                <div class="volume-bar" style="height:3px;"></div>
+                <div class="volume-bar" style="height:3px;"></div>
+            </div>
+
+            <div class="processing-bar" id="processingBar">
+                <div class="processing-bar-fill"></div>
+            </div>
+
+            <div class="action-row">
+                <button class="action-btn" id="exportBtn" onclick="exportTranscript()" disabled> 匯出</button>
+                <button class="action-btn danger" onclick="clearAll()"> 清除</button>
+            </div>
+
+            <div class="stats-row">
+                <span class="stat-chip">段落 <strong id="segmentCount">0</strong></span>
+                <span class="stat-chip">字數 <strong id="charCount">0</strong></span>
+                <span class="stat-chip">延遲 <span id="latencyBadge" class="latency-badge good" style="display:none;"><span id="latencyValue">0ms</span></span></span>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div class="results-grid">
+            <!-- Original -->
+            <div class="result-panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        原文轉錄
+                        <span class="lang-badge" id="sourceLangBadge">EN</span>
+                    </div>
+                    <button class="copy-btn" onclick="copyText('originalContent')">📋 複製</button>
+                </div>
+                <div class="panel-content" id="originalContent">
+                    <div class="placeholder">
+                        <div class="placeholder-icon">🎤</div>
+                        <div class="placeholder-text">按下錄音鍵後<br>轉錄文字將即時顯示於此</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Translation -->
+            <div class="result-panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        翻譯結果
+                        <span class="lang-badge" id="targetLangBadge">ZH-TW</span>
+                    </div>
+                    <button class="copy-btn" onclick="copyText('translatedContent')">📋 複製</button>
+                </div>
+                <div class="panel-content" id="translatedContent">
+                    <div class="placeholder">
+                        <div class="placeholder-icon">🌐</div>
+                        <div class="placeholder-text">翻譯結果將<br>同步顯示於此</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        // ==================== 狀態管理 ====================
+        const state = {
+            isRecording: false,
+            mediaRecorder: null,
+            audioStream: null,
+            audioContext: null,
+            analyser: null,
+            audioChunks: [],
+            chunks: [],
+            transcriptionSegments: [],
+            translationSegments: [],
+            currentTranscription: '',
+            currentTranslation: '',
+            chunkIndex: 0,
+            processingQueue: [],
+            isProcessing: false,
+            startTime: null,
+            volumeInterval: null,
+            latencyStart: null,
+            latencies: [],
+            abortController: null
+        };
+
+        // ==================== 初始化 ====================
+        window.addEventListener('load', () => {
+            const savedKey = localStorage.getItem('groqApiKey');
+            if (savedKey) {
+                document.getElementById('apiKey').value = savedKey;
+                updateConnectionStatus('ready');
+            }
+            updateLangBadges();
+        });
+
+        // ==================== API Key 管理 ====================
+        function toggleApiKeyVisibility() {
+            const input = document.getElementById('apiKey');
+            input.type = input.type === 'password' ? 'text' : 'password';
+        }
+
+        document.getElementById('apiKey').addEventListener('input', (e) => {
+            const key = e.target.value.trim();
+            localStorage.setItem('groqApiKey', key);
+            updateConnectionStatus(key ? 'ready' : 'disconnected');
+        });
+
+        function updateConnectionStatus(status) {
+            const dot = document.getElementById('connectionDot');
+            const text = document.getElementById('connectionText');
+            dot.className = 'connection-dot';
+            switch(status) {
+                case 'ready':
+                    dot.classList.add('connected');
+                    text.textContent = '已設定 Key';
+                    break;
+                case 'connected':
+                    dot.classList.add('connected');
+                    text.textContent = '連線中';
+                    break;
+                case 'error':
+                    dot.classList.add('error');
+                    text.textContent = '連線錯誤';
+                    break;
+                default:
+                    text.textContent = '未連接';
+            }
+        }
+
+        // ==================== 語言設定 ====================
+        function swapLanguages() {
+            const source = document.getElementById('sourceLang');
+            const target = document.getElementById('targetLang');
+            const temp = source.value;
+            source.value = target.value;
+            target.value = temp;
+            updateLangBadges();
+        }
+
+        function updateLangBadges() {
+            const source = document.getElementById('sourceLang').value;
+            const target = document.getElementById('targetLang').value;
+            document.getElementById('sourceLangBadge').textContent = source.toUpperCase();
+            document.getElementById('targetLangBadge').textContent = target.toUpperCase();
+        }
+
+        document.getElementById('sourceLang').addEventListener('change', updateLangBadges);
+        document.getElementById('targetLang').addEventListener('change', updateLangBadges);
+
+        // ==================== 錄音控制 ====================
+        async function toggleRecording() {
+            if (!state.isRecording) {
+                await startRecording();
+            } else {
+                stopRecording();
+            }
+        }
+
+        async function startRecording() {
+            const apiKey = document.getElementById('apiKey').value.trim();
+            if (!apiKey) {
+                showToast('請先輸入 Groq API Key', 'error');
+                return;
+            }
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        sampleRate: 16000,
+                        channelCount: 1,
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }
+                });
+
+                state.audioStream = stream;
+
+                // 設定音訊分析
+                state.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const source = state.audioContext.createMediaStreamSource(stream);
+                state.analyser = state.audioContext.createAnalyser();
+                state.analyser.fftSize = 256;
+                source.connect(state.analyser);
+
+                // 開始音量監控
+                startVolumeMonitoring();
+
+                // 建立 MediaRecorder
+                const mimeType = getSupportedMimeType();
+                state.mediaRecorder = new MediaRecorder(stream, {
+                    mimeType: mimeType,
+                    audioBitsPerSecond: 64000
+                });
+
+                state.audioChunks = [];
+                state.chunkIndex = 0;
+                state.transcriptionSegments = [];
+                state.translationSegments = [];
+                state.startTime = Date.now();
+
+                state.mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        state.audioChunks.push(event.data);
+                    }
+                };
+
+                state.mediaRecorder.onstop = async () => {
+                    // 處理最後一個 chunk
+                    if (state.audioChunks.length > 0) {
+                        await processFinalChunk();
+                    }
+                    cleanup();
+                };
+
+                // 使用非常短的間隔收集資料
+                state.mediaRecorder.start(100);
+
+                // 設定定時器每 500ms 處理一次
+                state.processInterval = setInterval(async () => {
+                    if (state.audioChunks.length > 0 && !state.isProcessing) {
+                        await processAudioChunk();
+                    }
+                }, 500);
+
+                state.isRecording = true;
+                updateRecordingUI(true);
+                showToast('開始即時轉錄', 'success');
+
+            } catch (error) {
+                console.error('錄音錯誤:', error);
+                showToast('無法訪問麥克風: ' + error.message, 'error');
+            }
+        }
+
+        function stopRecording() {
+            state.isRecording = false;
+            if (state.processInterval) {
+                clearInterval(state.processInterval);
+                state.processInterval = null;
+            }
+            if (state.mediaRecorder && state.mediaRecorder.state !== 'inactive') {
+                state.mediaRecorder.stop();
+            }
+            updateRecordingUI(false);
+            showToast('錄音已停止', 'success');
+        }
+
+        function getSupportedMimeType() {
+            const types = [
+                'audio/webm;codecs=opus',
+                'audio/webm',
+                'audio/ogg;codecs=opus',
+                'audio/ogg'
+            ];
+            for (const type of types) {
+                if (MediaRecorder.isTypeSupported(type)) {
+                    return type;
+                }
+            }
+            return 'audio/webm';
+        }
+
+        // ==================== 音量監控 ====================
+        function startVolumeMonitoring() {
+            const bars = document.querySelectorAll('.volume-bar');
+            state.volumeInterval = setInterval(() => {
+                if (!state.analyser) return;
+                const dataArray = new Uint8Array(state.analyser.frequencyBinCount);
+                state.analyser.getByteFrequencyData(dataArray);
+                const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+                const level = Math.min(10, Math.floor(average / 25));
+                bars.forEach((bar, i) => {
+                    const h = i < level ? 6 + i * 2 : 3;
+                    bar.style.height = h + 'px';
+                    bar.style.background = i < level ? 'var(--primary)' : 'var(--border)';
+                });
+            }, 50);
+        }
+
+        function stopVolumeMonitoring() {
+            if (state.volumeInterval) {
+                clearInterval(state.volumeInterval);
+                state.volumeInterval = null;
+            }
+            document.querySelectorAll('.volume-bar').forEach(bar => {
+                bar.style.height = '3px';
+                bar.style.background = 'var(--border)';
+            });
+        }
+
+        // ==================== 音訊處理 ====================
+        async function processAudioChunk() {
+            if (state.audioChunks.length === 0 || state.isProcessing) return;
+
+            state.isProcessing = true;
+            state.latencyStart = Date.now();
+            updateProcessingUI(true);
+
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const sourceLang = document.getElementById('sourceLang').value;
+            const langCode = getWhisperLangCode(sourceLang);
+
+            try {
+                // 合併所有 chunks
+                const blob = new Blob(state.audioChunks, { type: getSupportedMimeType() });
+                
+                const formData = new FormData();
+                formData.append('file', blob, 'chunk.webm');
+                formData.append('model', 'whisper-large-v3-turbo');
+                formData.append('language', langCode);
+                formData.append('response_format', 'json');
+
+                // 取消之前的請求
+                if (state.abortController) {
+                    state.abortController.abort();
+                }
+                state.abortController = new AbortController();
+
+                const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: formData,
+                    signal: state.abortController.signal
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error?.message || `API 錯誤: ${response.status}`);
+                }
+
+                const data = await response.json();
+                const text = (data.text || '').trim();
+
+                if (text) {
+                    const latency = Date.now() - state.latencyStart;
+                    state.latencies.push(latency);
+                    updateLatencyDisplay(latency);
+
+                    const timestamp = formatTimestamp(Date.now() - state.startTime);
+                    addTranscriptionSegment(text, timestamp);
+                    
+                    // 清空已處理的 chunks
+                    state.audioChunks = [];
+
+                    // 立即觸發翻譯
+                    await translateText(text);
+                }
+
+            } catch (error) {
+                if (error.name !== 'AbortError') {
+                    console.error('處理錯誤:', error);
+                    showToast('轉錄錯誤: ' + error.message, 'error');
+                    // 不清空 chunks，下次重試
+                }
+            } finally {
+                state.isProcessing = false;
+                updateProcessingUI(false);
+            }
+        }
+
+        async function processFinalChunk() {
+            if (state.audioChunks.length === 0) return;
+            
+            state.isProcessing = true;
+            updateProcessingUI(true);
+
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const sourceLang = document.getElementById('sourceLang').value;
+            const langCode = getWhisperLangCode(sourceLang);
+
+            try {
+                const blob = new Blob(state.audioChunks, { type: getSupportedMimeType() });
+                
+                const formData = new FormData();
+                formData.append('file', blob, 'final.webm');
+                formData.append('model', 'whisper-large-v3-turbo');
+                formData.append('language', langCode);
+                formData.append('response_format', 'json');
+
+                const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API 錯誤: ${response.status}`);
+                }
+
+                const data = await response.json();
+                const text = (data.text || '').trim();
+
+                if (text) {
+                    const timestamp = formatTimestamp(Date.now() - state.startTime);
+                    addTranscriptionSegment(text, timestamp);
+                    await translateText(text);
+                }
+
+            } catch (error) {
+                console.error('最終處理錯誤:', error);
+            } finally {
+                state.isProcessing = false;
+                updateProcessingUI(false);
+                state.audioChunks = [];
+            }
+        }
+
+        // ==================== 翻譯 ====================
+        async function translateText(text) {
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const targetLang = document.getElementById('targetLang').value;
+            const targetLangName = getLangName(targetLang);
+
+            try {
+                const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: 'llama-3.1-8b-instant',
+                        messages: [
+                            {
+                                role: 'system',
+                                content: `你是一個專業的即時會議翻譯助手。請將以下內容翻譯成${targetLangName}。只輸出翻譯結果，不要添加任何說明或標記。保持原文的語氣和格式。`
+                            },
+                            {
+                                role: 'user',
+                                content: text
+                            }
+                        ],
+                        temperature: 0.3,
+                        max_tokens: 500,
+                        stream: false
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`翻譯 API 錯誤: ${response.status}`);
+                }
+
+                const data = await response.json();
+                const translation = (data.choices?.[0]?.message?.content || '').trim();
+
+                if (translation) {
+                    state.currentTranslation = translation;
+                    state.translationSegments.push(translation);
+                    updateTranslationDisplay(translation);
+                    updateStats();
+                }
+
+            } catch (error) {
+                console.error('翻譯錯誤:', error);
+                // 降級處理：顯示原文
+                state.currentTranslation = text;
+                state.translationSegments.push(text);
+                updateTranslationDisplay(text);
+                updateStats();
+            }
+        }
+
+        // ==================== UI 更新 ====================
+        function addTranscriptionSegment(text, timestamp) {
+            state.currentTranscription = text;
+            state.transcriptionSegments.push({ text, timestamp });
+
+            const container = document.getElementById('originalContent');
+            
+            // 移除 placeholder
+            if (container.querySelector('.placeholder')) {
+                container.innerHTML = '';
+                container.classList.add('has-content');
+            }
+
+            // 移除之前的 current segment
+            const prevCurrent = container.querySelector('.current-segment');
+            if (prevCurrent) prevCurrent.remove();
+
+            // 添加新的 current segment
+            const currentDiv = document.createElement('div');
+            currentDiv.className = 'current-segment';
+            currentDiv.innerHTML = `
+                <div class="current-segment-label">
+                    <span class="rec-dot"></span> 最新轉錄
+                </div>
+                <div class="current-segment-text">${escapeHtml(text)}</div>
+            `;
+            container.appendChild(currentDiv);
+
+            // 如果有之前的段落，轉換為普通段落
+            const segments = container.querySelectorAll('.segment-item');
+            if (segments.length > 20) {
+                // 只保留最近 20 段以維持效能
+                segments[0].remove();
+            }
+
+            updateStats();
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function updateTranslationDisplay(text) {
+            const container = document.getElementById('translatedContent');
+            
+            if (container.querySelector('.placeholder')) {
+                container.innerHTML = '';
+                container.classList.add('has-content');
+            }
+
+            container.innerHTML = `
+                <div class="current-segment">
+                    <div class="current-segment-label">
+                        <span class="rec-dot"></span> 最新翻譯
+                    </div>
+                    <div class="current-segment-text">${escapeHtml(text)}</div>
+                </div>
+            `;
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function updateRecordingUI(recording) {
+            const btn = document.getElementById('recordBtn');
+            const icon = document.getElementById('recordIcon');
+            const text = document.getElementById('recordText');
+            const sub = document.getElementById('recordSub');
+            const indicator = document.getElementById('recIndicator');
+            const ring = btn.querySelector('.btn-ring');
+
+            if (recording) {
+                btn.classList.add('recording');
+                icon.textContent = '⬛';
+                text.textContent = '即時轉錄中...';
+                sub.textContent = '點擊停止錄音';
+                indicator.classList.add('active');
+                if (ring) ring.style.display = 'block';
+            } else {
+                btn.classList.remove('recording');
+                icon.textContent = '🎤';
+                text.textContent = '點擊開始錄音';
+                sub.textContent = '支援即時轉錄與翻譯';
+                indicator.classList.remove('active');
+                if (ring) ring.style.display = 'none';
+            }
+        }
+
+        function updateProcessingUI(processing) {
+            const bar = document.getElementById('processingBar');
+            if (processing) {
+                bar.classList.add('active');
+            } else {
+                bar.classList.remove('active');
+            }
+        }
+
+        function updateLatencyDisplay(latency) {
+            const badge = document.getElementById('latencyBadge');
+            const value = document.getElementById('latencyValue');
+            badge.style.display = 'inline-flex';
+            value.textContent = latency + 'ms';
+
+            badge.className = 'latency-badge';
+            if (latency < 1000) {
+                badge.classList.add('good');
+            } else if (latency < 2000) {
+                badge.classList.add('warn');
+            } else {
+                badge.classList.add('bad');
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('segmentCount').textContent = state.transcriptionSegments.length;
+            const totalChars = state.transcriptionSegments.reduce((sum, seg) => sum + seg.text.length, 0);
+            document.getElementById('charCount').textContent = totalChars;
+        }
+
+        // ==================== 工具函數 ====================
+        function getWhisperLangCode(lang) {
+            const map = {
+                'en': 'en', 'zh': 'zh', 'zh-TW': 'zh', 'zh-CN': 'zh',
+                'ja': 'ja', 'ko': 'ko', 'es': 'es', 'fr': 'fr',
+                'de': 'de', 'pt': 'pt', 'ru': 'ru', 'ar': 'ar'
+            };
+            return map[lang] || 'en';
+        }
+
+        function getLangName(code) {
+            const map = {
+                'en': '英文', 'zh-TW': '繁體中文', 'zh-CN': '簡體中文',
+                'zh': '中文', 'ja': '日文', 'ko': '韓文',
+                'es': '西班牙文', 'fr': '法文', 'de': '德文'
+            };
+            return map[code] || code;
+        }
+
+        function formatTimestamp(ms) {
+            const totalSeconds = Math.floor(ms / 1000);
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function cleanup() {
+            if (state.audioStream) {
+                state.audioStream.getTracks().forEach(track => track.stop());
+                state.audioStream = null;
+            }
+            if (state.audioContext) {
+                state.audioContext.close();
+                state.audioContext = null;
+            }
+            state.analyser = null;
+            stopVolumeMonitoring();
+        }
+
+        // ==================== 匯出功能 ====================
+        function exportTranscript() {
+            if (state.transcriptionSegments.length === 0) {
+                showToast('沒有可匯出的內容', 'error');
+                return;
+            }
+
+            const sourceLang = document.getElementById('sourceLang').value;
+            const targetLang = document.getElementById('targetLang').value;
+            
+            let content = `會議轉錄記錄\n`;
+            content += `來源語言: ${getLangName(sourceLang)}\n`;
+            content += `目標語言: ${getLangName(targetLang)}\n`;
+            content += `時間: ${new Date().toLocaleString('zh-TW')}\n`;
+            content += `${'='.repeat(50)}\n\n`;
+
+            state.transcriptionSegments.forEach((seg, index) => {
+                content += `[${seg.timestamp}] 段落 ${index + 1}\n`;
+                content += `原文: ${seg.text}\n\n`;
+            });
+
+            if (state.translationSegments.length > 0) {
+                content += `\n${'='.repeat(50)}\n翻譯結果:\n\n`;
+                state.translationSegments.forEach((trans, index) => {
+                    content += `[段落 ${index + 1}]\n${trans}\n\n`;
+                });
+            }
+
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `transcript_${Date.now()}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            showToast('已匯出轉錄檔案', 'success');
+        }
+
+        // ==================== 清除功能 ====================
+        function clearAll() {
+            state.transcriptionSegments = [];
+            state.translationSegments = [];
+            state.currentTranscription = '';
+            state.currentTranslation = '';
+            state.audioChunks = [];
+            state.latencies = [];
+
+            const original = document.getElementById('originalContent');
+            original.innerHTML = `
+                <div class="placeholder">
+                    <div class="placeholder-icon">🎤</div>
+                    <div class="placeholder-text">按下錄音鍵後<br>轉錄文字將即時顯示於此</div>
+                </div>
+            `;
+            original.classList.remove('has-content');
+
+            const translated = document.getElementById('translatedContent');
+            translated.innerHTML = `
+                <div class="placeholder">
+                    <div class="placeholder-icon"></div>
+                    <div class="placeholder-text">翻譯結果將<br>同步顯示於此</div>
+                </div>
+            `;
+            translated.classList.remove('has-content');
+
+            document.getElementById('segmentCount').textContent = '0';
+            document.getElementById('charCount').textContent = '0';
+            document.getElementById('latencyBadge').style.display = 'none';
+
+            showToast('已清除所有內容', 'success');
+        }
+
+        // ==================== 複製功能 ====================
+        function copyText(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.innerText;
+            
+            if (!text || element.querySelector('.placeholder')) {
+                showToast('沒有可複製的內容', 'error');
+                return;
+            }
+
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('已複製到剪貼簿', 'success');
+            }).catch(err => {
+                // Fallback
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showToast('已複製到剪貼簿', 'success');
+            });
+        }
+
+        // ==================== Toast 通知 ====================
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        // ==================== 頁面關閉時清理 ====================
+        window.addEventListener('beforeunload', () => {
+            if (state.isRecording) {
+                stopRecording();
+            }
+            cleanup();
+        });
+    </script>
+</body>
+</html>
